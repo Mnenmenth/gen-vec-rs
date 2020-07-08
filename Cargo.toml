@@ -1,0 +1,10 @@
+[package]
+name = "gi-vec"
+version = "0.0.1"
+authors = ["Earl Kennedy <mnenmenth@gmail.com>"]
+edition = "2018"
+description = "Generational index Vec"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
