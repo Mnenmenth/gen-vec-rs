@@ -8,7 +8,7 @@ pub struct Index
     generation: usize
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Item<T>
 {
     value: T,
@@ -16,7 +16,7 @@ pub struct Item<T>
 }
 
 #[derive(Debug)]
-pub struct GiVec<T>
+pub struct GenerationalVec<T>
 {
     free_indices: VecDeque<usize>,
     items: Vec<Option<Item<T>>>,
@@ -24,11 +24,11 @@ pub struct GiVec<T>
     length: usize
 }
 
-impl<T> GiVec<T>
+impl<T> GenerationalVec<T>
 {
-    pub fn new() -> GiVec<T>
+    pub fn new() -> GenerationalVec<T>
     {
-        GiVec
+        GenerationalVec
         {
             free_indices: VecDeque::new(),
             items: Vec::new(),
@@ -114,12 +114,12 @@ impl<T> GiVec<T>
 
 #[cfg(test)]
 mod tests {
-    use crate::GiVec;
+    use crate::GenerationalVec;
 
     #[test]
     fn insert()
     {
-        let mut givec = GiVec::new();
+        let mut givec = GenerationalVec::new();
         let i = givec.insert(3);
         assert_eq!(i.index, 0);
         assert_eq!(i.generation, 0);
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn get()
     {
-        let mut givec = GiVec::new();
+        let mut givec = GenerationalVec::new();
         let i = givec.insert(3);
         let item = givec.get(i).unwrap();
         assert_eq!(*item, 3);
@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn get_mut()
     {
-        let mut givec = GiVec::new();
+        let mut givec = GenerationalVec::new();
         let i = givec.insert(3);
         let item = givec.get_mut(i).unwrap();
         *item = 1;
@@ -157,13 +157,16 @@ mod tests {
     #[test]
     fn remove()
     {
-        let mut givec = GiVec::new();
+        let mut givec = GenerationalVec::new();
         let i = givec.insert(3);
         let item = givec.remove(i).unwrap();
         assert_eq!(item, 3);
+        assert_eq!(givec.len(), 0);
+        assert_eq!(givec.get(i), None);
 
         let i2 = givec.insert(4);
         assert_eq!(i2.index, 0);
         assert_eq!(i2.generation, 1);
+        assert_eq!(givec.len(), 1);
     }
 }
