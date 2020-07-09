@@ -4,7 +4,7 @@ use std::vec::Vec;
 use std::collections::VecDeque;
 
 /// An index of a `GenerationalVec`
-#[derive(Clone, Copy, Debug)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Copy, Debug)]
 pub struct Index
 {
     index: usize,

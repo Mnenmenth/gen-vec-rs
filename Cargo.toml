@@ -1,5 +1,5 @@
 [package]
-name = "gi-vec"
+name = "generational-vec"
 version = "0.0.1"
 authors = ["Earl Kennedy <mnenmenth@gmail.com>"]
 edition = "2018"
