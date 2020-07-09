@@ -110,6 +110,11 @@ impl<T> GenerationalVec<T>
         }
     }
 
+    pub fn contains(&self, index: Index) -> bool
+    {
+        self.get(index).is_some()
+    }
+
     /// Insert `value` in the `GenerationalVec` and return an associated `Index`
     pub fn insert(&mut self, value: T) -> Index
     {
