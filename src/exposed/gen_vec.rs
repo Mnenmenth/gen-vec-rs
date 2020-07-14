@@ -4,7 +4,8 @@ use std::
     vec::Vec,
     iter,
     slice
-};use crate::{Index, Item};
+};
+use crate::{Index, Item};
 
 /// Generationally indexed vector
 #[derive(Debug)]
@@ -112,7 +113,7 @@ impl<T> ExposedGenVec<T>
         self.get(index).is_some()
     }
 
-    /// Set the value for the given `index`
+    /// Set the value for the given `index` and returns the previous value (if any)
     ///
     /// This may overwrite past (but not future) generations
     ///
@@ -128,8 +129,11 @@ impl<T> ExposedGenVec<T>
     /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
     /// vec.set(index, 0);
     /// assert!(vec.contains(index));
+    ///
+    /// let replaced: i32 = vec.set(index, 1).expect("0");
+    /// assert_eq!(replaced, 0);
     /// ```
-    pub fn set(&mut self, index: Index, value: T)
+    pub fn set(&mut self, index: Index, value: T) -> Option<T>
     {
         // If vec is smaller than the index, resize it and fill intermittent indices with None
         if self.items.len() < index.index + 1
@@ -139,14 +143,50 @@ impl<T> ExposedGenVec<T>
 
         match self.items.get_mut(index.index)
         {
-            Some(item) =>
+            Some(Some(item)) if item.generation <= index.generation =>
                 {
-                    if item.is_none() || (item.is_some() && item.as_ref().unwrap().generation <= index.generation)
+                    match std::mem::replace(&mut self.items[index.index], Some(Item { value, generation: index.generation }))
                     {
-                        *item = Some(Item { value, generation: index.generation });
+                        Some(item) => Some(item.value),
+                        _ => None
                     }
                 },
-            _ => panic!(format!("Index should point to a valid index in items vec, but it doesn't\n{:?}", index))
+            Some(_) =>
+                {
+                    self.items[index.index] = Some(Item { value, generation: index.generation });
+                    None
+                }
+            _ => panic!(format!("Index is out of bounds despite internal vec being resized\n{:?}", index))
+        }
+    }
+
+    /// Removes the value of `index` from the vec and internally sets the element to `None`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
+    ///
+    /// let mut allocater: IndexAllocator = IndexAllocator::new();
+    /// let index = allocater.allocate();
+    ///
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
+    /// vec.set(index, 0);
+    /// let replaced: Option<i32> = vec.set(index, 1);
+    ///
+    /// assert_eq!(replaced, Some(0));
+    /// ```
+    pub fn remove(&mut self, index: Index) -> Option<T>
+    {
+        match self.items.get(index.index)
+        {
+            Some(Some(item)) if index.generation == item.generation =>
+                {
+                    let removed = std::mem::replace(&mut self.items[index.index], None)
+                                            .expect(format!("{:?} is None", index).as_str());
+                    Some(removed.value)
+                },
+            _ => None
         }
     }
 
@@ -188,9 +228,12 @@ impl<T> ExposedGenVec<T>
     ///
     /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
     /// vec.set(index, 0);
+    ///
     /// let mut value: &mut i32 = vec.get_mut(index).unwrap();
     /// assert_eq!(*value, 0);
+    ///
     /// *value = 1;
+    ///
     /// let value = vec.get(index).unwrap();
     /// assert_eq!(*value, 1);
     /// ```
@@ -210,7 +253,25 @@ impl<T> ExposedGenVec<T>
     /// # Examples
     ///
     /// ```
-
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    ///
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
+    /// vec.set(allocator.allocate(), 0);
+    /// vec.set(allocator.allocate(), 1);
+    ///
+    /// for (index, value) in vec.iter()
+    /// {
+    ///     println!("Index: {:?}, Value: {}", index, value);
+    /// }
+    ///
+    /// // This works as well
+    /// for (index, value) in vec
+    /// {
+    ///     println!("Index: {:?}, Value: {}", index, value);
+    /// }
     /// ```
     pub fn iter(&self) -> Iter<T>
     {
@@ -227,7 +288,19 @@ impl<T> ExposedGenVec<T>
     /// # Examples
     ///
     /// ```
-
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    ///
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
+    /// vec.set(allocator.allocate(), 0);
+    /// vec.set(allocator.allocate(), 1);
+    ///
+    /// for (index, value) in vec.iter_mut()
+    /// {
+    ///     *value = 30;
+    /// }
     /// ```
     pub fn iter_mut(&mut self) -> IterMut<T>
     {
@@ -385,15 +458,17 @@ mod vec_tests
         let index = allocator.allocate();
 
         let mut vec = ExposedGenVec::new();
-        vec.set(index, 0);
+        let replaced = vec.set(index, 0);
         assert!(vec.contains(index));
+        assert_eq!(replaced, None);
 
         allocator.deallocate(index);
         let index1 = allocator.allocate();
 
-        vec.set(index1, 0);
+        let replaced = vec.set(index1, 1);
         assert!(!vec.contains(index));
         assert!(vec.contains(index1));
+        assert_eq!(replaced, Some(0));
 
         for _ in 0..50
         {
@@ -401,9 +476,10 @@ mod vec_tests
         }
 
         let index = allocator.allocate();
-        vec.set(index, 20);
+        let replaced = vec.set(index, 20);
         assert!(vec.contains(index));
         assert_eq!(*vec.get(index).unwrap(), 20);
+        assert_eq!(replaced, None);
     }
 
     #[test]
