@@ -9,7 +9,7 @@ struct AllocatedIndex
     generation: usize
 }
 
-/// Allocates and deallocates indices for a `GenerationalVec`
+/// Allocates and deallocates indices for a `ExposedGenVec`
 pub struct IndexAllocator
 {
     free_indices: VecDeque<usize>,

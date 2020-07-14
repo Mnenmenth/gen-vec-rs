@@ -1,5 +1,3 @@
-/// Generational Index Vec
-
 use std::
 {
     vec,
@@ -12,7 +10,7 @@ use crate::{Index, Item};
 
 /// A vector with reusable indices
 #[derive(Debug)]
-pub struct GenerationalVec<T>
+pub struct ClosedGenVec<T>
 {
     free_indices: VecDeque<usize>,
     items: Vec<Option<Item<T>>>,
@@ -20,19 +18,19 @@ pub struct GenerationalVec<T>
     length: usize
 }
 
-impl<T> GenerationalVec<T>
+impl<T> ClosedGenVec<T>
 {
-    /// Returns an empty `GenerationalVec`
+    /// Returns an empty `ClosedGenVec`
     ///
     /// # Examples
     ///
     /// ```
-    /// use gen_vec::closed::GenerationalVec;
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// use gen_vec::closed::ClosedGenVec;
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     /// ```
-    pub fn new() -> GenerationalVec<T>
+    pub fn new() -> ClosedGenVec<T>
     {
-        GenerationalVec
+        ClosedGenVec
         {
             free_indices: VecDeque::new(),
             items: Vec::new(),
@@ -41,20 +39,20 @@ impl<T> GenerationalVec<T>
         }
     }
 
-    /// Returns a `GenerationalVec` with initial capacity of `capacity`
+    /// Returns a `ClosedGenVec` with initial capacity of `capacity`
     ///
-    /// Allows the `GenerationalVec` to hold `capacity` elements before
+    /// Allows the `ClosedGenVec` to hold `capacity` elements before
     /// allocating more space
     ///
     /// # Examples
     ///
     /// ```
-    /// use gen_vec::closed::GenerationalVec;
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(5);
+    /// use gen_vec::closed::ClosedGenVec;
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::with_capacity(5);
     /// ```
-    pub fn with_capacity(capacity: usize) -> GenerationalVec<T>
+    pub fn with_capacity(capacity: usize) -> ClosedGenVec<T>
     {
-        GenerationalVec
+        ClosedGenVec
         {
             free_indices: VecDeque::with_capacity(capacity),
             items: Vec::with_capacity(capacity),
@@ -63,16 +61,16 @@ impl<T> GenerationalVec<T>
         }
     }
 
-    /// Number of active `Item`s within the `GenerationalVec`
+    /// Number of active `Item`s within the `ClosedGenVec`
     ///
     /// The internal item vec may actually be larger depending on the number of freed indices
     ///
     /// # Examples
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     ///
     /// let index: Index = vec.insert(42);
     /// assert_eq!(vec.len(), 1);
@@ -91,9 +89,9 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     /// assert!(vec.is_empty());
     ///
     /// let index: Index = vec.insert(23);
@@ -107,14 +105,14 @@ impl<T> GenerationalVec<T>
         self.length <= 0
     }
 
-    /// Reserved capacity within the `GenerationalVec`
+    /// Reserved capacity within the `ClosedGenVec`
     ///
     /// # Examples
     ///
     /// ```
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(5);
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::with_capacity(5);
     /// assert_eq!(vec.capacity(), 5);
     /// ```
     pub fn capacity(&self) -> usize
@@ -131,9 +129,9 @@ impl<T> GenerationalVec<T>
     /// 
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     /// 
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     ///
     /// let index: Index = vec.insert(42);
     /// assert!(vec.contains(index));
@@ -164,9 +162,9 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     /// assert_eq!(vec.capacity(), 0);
     ///
     /// let index: Index = vec.insert(13);
@@ -200,9 +198,9 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     ///
     /// let index: Index = vec.insert(124);
     /// assert!(vec.contains(index));
@@ -221,8 +219,8 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// use gen_vec::closed::ClosedGenVec;
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     ///
     /// let index: Index = vec.insert(23);
     /// ```
@@ -265,8 +263,8 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// use gen_vec::closed::ClosedGenVec;
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     ///
     /// let index: Index = vec.insert(23);
     ///
@@ -288,8 +286,8 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// use gen_vec::closed::ClosedGenVec;
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     ///
     /// let index: Index = vec.insert(23);
     ///
@@ -318,9 +316,9 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     ///
     /// let index: Index = vec.insert(124);
     /// assert!(vec.contains(index));
@@ -351,9 +349,9 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     /// vec.insert(0);
     /// vec.insert(1);
     ///
@@ -378,9 +376,9 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
-    /// use gen_vec::closed::GenerationalVec;
+    /// use gen_vec::closed::ClosedGenVec;
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
     /// vec.insert(0);
     /// vec.insert(1);
     ///
@@ -400,7 +398,7 @@ impl<T> GenerationalVec<T>
 
 }
 
-/// Struct for consuming a `GenerationalVec` into an iterator
+/// Struct for consuming a `ClosedGenVec` into an iterator
 pub struct IntoIter<T>
 {
     internal: iter::Enumerate<vec::IntoIter<Option<Item<T>>>>
@@ -424,7 +422,7 @@ impl<T> Iterator for IntoIter<T>
     }
 }
 
-impl<T> IntoIterator for GenerationalVec<T>
+impl<T> IntoIterator for ClosedGenVec<T>
 {
     type Item = (Index, T);
     type IntoIter = IntoIter<T>;
@@ -438,7 +436,7 @@ impl<T> IntoIterator for GenerationalVec<T>
     }
 }
 
-/// Struct for creating an iterator over an immutable `GenerationalVec` reference
+/// Struct for creating an iterator over an immutable `ClosedGenVec` reference
 pub struct Iter<'a, T: 'a>
 {
     internal: iter::Enumerate<slice::Iter<'a, Option<Item<T>>>>
@@ -462,7 +460,7 @@ impl<'a, T> Iterator for Iter<'a, T>
     }
 }
 
-impl<'a, T> IntoIterator for &'a GenerationalVec<T>
+impl<'a, T> IntoIterator for &'a ClosedGenVec<T>
 {
     type Item = (Index, &'a T);
     type IntoIter = Iter<'a, T>;
@@ -473,7 +471,7 @@ impl<'a, T> IntoIterator for &'a GenerationalVec<T>
     }
 }
 
-/// Struct for creating an iterator over a mutable `GenerationalVec` reference
+/// Struct for creating an iterator over a mutable `ClosedGenVec` reference
 pub struct IterMut<'a, T: 'a>
 {
     internal: iter::Enumerate<slice::IterMut<'a, Option<Item<T>>>>
@@ -497,7 +495,7 @@ impl<'a, T: 'a> Iterator for IterMut<'a, T>
     }
 }
 
-impl<'a, T> IntoIterator for &'a mut GenerationalVec<T>
+impl<'a, T> IntoIterator for &'a mut ClosedGenVec<T>
 {
     type Item = (Index, &'a mut T);
     type IntoIter = IterMut<'a, T>;
@@ -508,7 +506,7 @@ impl<'a, T> IntoIterator for &'a mut GenerationalVec<T>
     }
 }
 
-impl<T> std::ops::Index<Index> for GenerationalVec<T>
+impl<T> std::ops::Index<Index> for ClosedGenVec<T>
 {
     type Output = T;
 
@@ -518,7 +516,7 @@ impl<T> std::ops::Index<Index> for GenerationalVec<T>
     }
 }
 
-impl<T> std::ops::IndexMut<Index> for GenerationalVec<T>
+impl<T> std::ops::IndexMut<Index> for ClosedGenVec<T>
 {
     fn index_mut(&mut self, index: Index) -> &mut Self::Output
     {
@@ -528,12 +526,12 @@ impl<T> std::ops::IndexMut<Index> for GenerationalVec<T>
 
 #[cfg(test)]
 mod tests {
-    use crate::closed::GenerationalVec;
+    use crate::closed::ClosedGenVec;
 
     #[test]
     fn insert()
     {
-        let mut vec = GenerationalVec::new();
+        let mut vec = ClosedGenVec::new();
         let index = vec.insert(3);
         assert_eq!(index.index, 0);
         assert_eq!(index.generation, 0);
@@ -548,7 +546,7 @@ mod tests {
     #[test]
     fn get()
     {
-        let mut vec = GenerationalVec::new();
+        let mut vec = ClosedGenVec::new();
         let index = vec.insert(3);
         let item = vec.get(index).unwrap();
         assert_eq!(*item, 3);
@@ -561,7 +559,7 @@ mod tests {
     #[test]
     fn get_mut()
     {
-        let mut vec = GenerationalVec::new();
+        let mut vec = ClosedGenVec::new();
         let index = vec.insert(3);
         let item = vec.get_mut(index).unwrap();
         *item = 1;
@@ -571,7 +569,7 @@ mod tests {
     #[test]
     fn remove()
     {
-        let mut vec = GenerationalVec::new();
+        let mut vec = ClosedGenVec::new();
         let index = vec.insert(3);
         let item = vec.remove(index).unwrap();
         assert_eq!(item, 3);
@@ -587,7 +585,7 @@ mod tests {
     #[test]
     fn clear()
     {
-        let mut vec = GenerationalVec::new();
+        let mut vec = ClosedGenVec::new();
         vec.insert(4);
         let index = vec.insert(5);
 
@@ -605,7 +603,7 @@ mod tests {
     #[test]
     fn len()
     {
-        let mut vec = GenerationalVec::new();
+        let mut vec = ClosedGenVec::new();
         assert_eq!(vec.len(), 0);
         vec.insert(3);
         assert_eq!(vec.len(), 1);
@@ -614,7 +612,7 @@ mod tests {
     #[test]
     fn is_empty()
     {
-        let mut vec = GenerationalVec::new();
+        let mut vec = ClosedGenVec::new();
         assert!(vec.is_empty());
         vec.insert(3);
         assert!(!vec.is_empty());
@@ -628,34 +626,34 @@ mod tests {
     #[test]
     fn capacity()
     {
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ClosedGenVec::<i32>::new();
         assert_eq!(vec.capacity(), 0);
 
         vec.reserve(24);
         assert!(vec.capacity() >= 24);
 
-        vec = GenerationalVec::with_capacity(5);
+        vec = ClosedGenVec::with_capacity(5);
         assert_eq!(vec.capacity(), 5);
     }
 
     #[test]
     fn contains()
     {
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ClosedGenVec::<i32>::new();
         let index = vec.insert(3);
         assert!(vec.contains(index));
         vec.remove(index);
         assert!(!vec.contains(index));
         let index = vec.insert(5);
 
-        vec = GenerationalVec::new();
+        vec = ClosedGenVec::new();
         assert!(!vec.contains(index));
     }
 
     #[test]
     fn into_iter()
     {
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ClosedGenVec::<i32>::new();
         let index = vec.insert(4);
         let index1 = vec.insert(5);
 
@@ -675,7 +673,7 @@ mod tests {
     #[test]
     fn iter()
     {
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ClosedGenVec::<i32>::new();
         let index = vec.insert(4);
         let index1 = vec.insert(5);
 
@@ -693,7 +691,7 @@ mod tests {
     #[test]
     fn iter_mut()
     {
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ClosedGenVec::<i32>::new();
         let index = vec.insert(4);
         let index1 = vec.insert(5);
 
@@ -716,7 +714,7 @@ mod tests {
     #[test]
     fn index()
     {
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ClosedGenVec::<i32>::new();
         let index = vec.insert(4);
 
         assert_eq!(vec[index], 4);
@@ -725,7 +723,7 @@ mod tests {
     #[test]
     fn index_mut()
     {
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ClosedGenVec::<i32>::new();
         let index = vec.insert(4);
         vec[index] = 5;
 

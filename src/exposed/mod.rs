@@ -4,13 +4,13 @@
 //!
 //! ```
 //! use gen_vec::Index;
-//! use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+//! use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
 //!
 //! let mut allocator: IndexAllocator = IndexAllocator::new();
 //!
 //! let index: Index = allocator.allocate();
 //!
-//! let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+//! let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
 //! vec.set(index, 5);
 //!
 //! let value: &i32 = vec.get(index).unwrap();

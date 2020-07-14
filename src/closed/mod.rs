@@ -4,9 +4,9 @@
 //!
 //! ```
 //! use gen_vec::Index;
-//! use gen_vec::closed::GenerationalVec;
+//! use gen_vec::closed::ClosedGenVec;
 //!
-//! let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+//! let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
 //!
 //! let index: Index = vec.insert(42);
 //! assert!(vec.contains(index));

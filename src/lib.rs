@@ -4,14 +4,14 @@
 //!
 //! ## Closed vs. Exposed index allocation implementations
 //!
-//! `gen_vec::closed::GenerationalVec` uses a non user-accessible index allocator to manage `Index`s
+//! `ClosedGenVec` uses a non user-accessible index allocator to manage `Index`s
 //!
-//! `gen_vec::exposed::GenerationalVec` relies on an external `gen_vec::exposed::IndexAllocator`
+//! `ExposedGenVec` relies on an external `IndexAllocator`
 //!
 //! As such, an `IndexAllocator` must be created and used to allocate/deallocate `Index`s manually.
-//! This is useful for using the same `Index` across multiple `gen_vec::exposed::GenerationalVec`s
+//! This is useful for using the same `Index` across multiple `ExposedGenerationalVec`s
 //!
-//! **Note:** `IndexAllocator` cannot be used with the self-allocating `gen_vec::closed::GenerationalVec` since
+//! **Note:** `IndexAllocator` cannot be used with the self-allocating `ClosedGenerationalVec` since
 //! it manages its own `Index`s
 //!
 //! ## Explanation of Generational Indices
@@ -24,7 +24,7 @@
 //! Every time an `Index` is reused, the internal generation is incremented. This ensures that a deallocated
 //! `Index` handle can't access data that it no longer validly points to
 
-/// An index of a `GenerationalVec`
+/// An index of a generational vec
 #[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Copy, Debug)]
 pub struct Index
 {
@@ -32,7 +32,7 @@ pub struct Index
     generation: usize
 }
 
-/// An item within a `GenerationalVec`
+/// An item within a generational vec
 #[derive(Debug)]
 struct Item<T>
 {

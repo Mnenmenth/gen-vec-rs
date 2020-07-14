@@ -8,55 +8,55 @@ use std::
 
 /// Generationally indexed vector
 #[derive(Debug)]
-pub struct GenerationalVec<T>
+pub struct ExposedGenVec<T>
 {
     items: Vec<Option<Item<T>>>
 }
 
-impl<T> GenerationalVec<T>
+impl<T> ExposedGenVec<T>
 {
-    /// Returns an empty `GenerationalVec`
+    /// Returns an empty `ExposedGenVec`
     ///
     /// # Examples
     ///
     /// ```
-    /// use gen_vec::exposed::GenerationalVec;
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// use gen_vec::exposed::ExposedGenVec;
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
     /// ```
-    pub fn new() -> GenerationalVec<T>
+    pub fn new() -> ExposedGenVec<T>
     {
-        GenerationalVec
+        ExposedGenVec
         {
             items: Vec::new()
         }
     }
 
-    /// Returns a `GenerationalVec` with initial capacity of `capacity`
+    /// Returns a `ExposedGenVec` with initial capacity of `capacity`
     ///
-    /// Allows the `GenerationalVec` to hold `capacity` elements before
+    /// Allows the `ExposedGenVec` to hold `capacity` elements before
     /// allocating more space
     ///
     /// # Examples
     ///
     /// ```
-    /// use gen_vec::exposed::GenerationalVec;
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(5);
+    /// use gen_vec::exposed::ExposedGenVec;
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::with_capacity(5);
     /// ```
-    pub fn with_capacity(capacity: usize) -> GenerationalVec<T>
+    pub fn with_capacity(capacity: usize) -> ExposedGenVec<T>
     {
-        GenerationalVec
+        ExposedGenVec
         {
             items: Vec::with_capacity(capacity)
         }
     }
 
-    /// Reserved capacity within the `GenerationalVec`
+    /// Reserved capacity within the `ExposedGenVec`
     ///
     /// # Examples
     ///
     /// ```
-    /// use gen_vec::exposed::GenerationalVec;
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(5);
+    /// use gen_vec::exposed::ExposedGenVec;
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::with_capacity(5);
     /// assert_eq!(vec.capacity(), 5);
     /// ```
     pub fn capacity(&self) -> usize
@@ -73,12 +73,12 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
     /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
     /// let index: Index = allocator.allocate();
     /// 
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
     /// assert_eq!(vec.capacity(), 0);
     ///
     /// vec.set(index, 0);
@@ -97,12 +97,12 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
     /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
     /// let index: Index = allocator.allocate();
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
     /// assert!(!vec.contains(index));
     /// vec.set(index, 0);
     /// assert!(vec.contains(index));
@@ -120,12 +120,12 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
     /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
     /// let index: Index = allocator.allocate();
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
     /// vec.set(index, 0);
     /// assert!(vec.contains(index));
     /// ```
@@ -156,12 +156,12 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
     /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
     /// let index: Index = allocator.allocate();
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
     /// vec.set(index, 0);
     /// let value: &i32 = vec.get(index).unwrap();
     /// assert_eq!(*value, 0);
@@ -181,12 +181,12 @@ impl<T> GenerationalVec<T>
     ///
     /// ```
     /// use gen_vec::Index;
-    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
     /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
     /// let index: Index = allocator.allocate();
     ///
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
     /// vec.set(index, 0);
     /// let mut value: &mut i32 = vec.get_mut(index).unwrap();
     /// assert_eq!(*value, 0);
@@ -238,7 +238,7 @@ impl<T> GenerationalVec<T>
     }
 }
 
-/// Struct for consuming a `GenerationalVec` into an iterator
+/// Struct for consuming a `ExposedGenVec` into an iterator
 pub struct IntoIter<T>
 {
     internal: iter::Enumerate<vec::IntoIter<Option<Item<T>>>>
@@ -262,7 +262,7 @@ impl<T> Iterator for IntoIter<T>
     }
 }
 
-impl<T> IntoIterator for GenerationalVec<T>
+impl<T> IntoIterator for ExposedGenVec<T>
 {
     type Item = (Index, T);
     type IntoIter = IntoIter<T>;
@@ -276,7 +276,7 @@ impl<T> IntoIterator for GenerationalVec<T>
     }
 }
 
-/// Struct for creating an iterator over an immutable `GenerationalVec` reference
+/// Struct for creating an iterator over an immutable `ExposedGenVec` reference
 pub struct Iter<'a, T: 'a>
 {
     internal: iter::Enumerate<slice::Iter<'a, Option<Item<T>>>>
@@ -300,7 +300,7 @@ impl<'a, T> Iterator for Iter<'a, T>
     }
 }
 
-impl<'a, T> IntoIterator for &'a GenerationalVec<T>
+impl<'a, T> IntoIterator for &'a ExposedGenVec<T>
 {
     type Item = (Index, &'a T);
     type IntoIter = Iter<'a, T>;
@@ -311,7 +311,7 @@ impl<'a, T> IntoIterator for &'a GenerationalVec<T>
     }
 }
 
-/// Struct for creating an iterator over a mutable `GenerationalVec` reference
+/// Struct for creating an iterator over a mutable `ExposedGenVec` reference
 pub struct IterMut<'a, T: 'a>
 {
     internal: iter::Enumerate<slice::IterMut<'a, Option<Item<T>>>>
@@ -335,7 +335,7 @@ impl<'a, T: 'a> Iterator for IterMut<'a, T>
     }
 }
 
-impl<'a, T> IntoIterator for &'a mut GenerationalVec<T>
+impl<'a, T> IntoIterator for &'a mut ExposedGenVec<T>
 {
     type Item = (Index, &'a mut T);
     type IntoIter = IterMut<'a, T>;
@@ -346,7 +346,7 @@ impl<'a, T> IntoIterator for &'a mut GenerationalVec<T>
     }
 }
 
-impl<T> std::ops::Index<Index> for GenerationalVec<T>
+impl<T> std::ops::Index<Index> for ExposedGenVec<T>
 {
     type Output = T;
 
@@ -356,7 +356,7 @@ impl<T> std::ops::Index<Index> for GenerationalVec<T>
     }
 }
 
-impl<T> std::ops::IndexMut<Index> for GenerationalVec<T>
+impl<T> std::ops::IndexMut<Index> for ExposedGenVec<T>
 {
     fn index_mut(&mut self, index: Index) -> &mut Self::Output
     {
@@ -372,7 +372,7 @@ mod vec_tests
     #[test]
     fn capacity()
     {
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ExposedGenVec::<i32>::new();
         assert_eq!(vec.capacity(), 0);
         vec.reserve(4);
         assert_eq!(vec.capacity(), 4);
@@ -384,7 +384,7 @@ mod vec_tests
         let mut allocator = IndexAllocator::new();
         let index = allocator.allocate();
 
-        let mut vec = GenerationalVec::new();
+        let mut vec = ExposedGenVec::new();
         vec.set(index, 0);
         assert!(vec.contains(index));
 
@@ -413,7 +413,7 @@ mod vec_tests
         let index = allocator.allocate();
         let index1 = allocator.allocate();
 
-        let mut vec = GenerationalVec::new();
+        let mut vec = ExposedGenVec::new();
         vec.set(index, 0);
         vec.set(index1, 1);
 
@@ -431,7 +431,7 @@ mod vec_tests
         let index = allocator.allocate();
         let index1 = allocator.allocate();
 
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ExposedGenVec::<i32>::new();
         vec.set(index, 4);
         vec.set(index1, 5);
 
@@ -453,7 +453,7 @@ mod vec_tests
         let index = allocator.allocate();
         let index1 = allocator.allocate();
 
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ExposedGenVec::<i32>::new();
         vec.set(index, 4);
         vec.set(index1, 5);
 
@@ -479,7 +479,7 @@ mod vec_tests
         let mut allocator = IndexAllocator::new();
         let index = allocator.allocate();
 
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ExposedGenVec::<i32>::new();
         vec.set(index, 4);
 
         assert_eq!(vec[index], 4);
@@ -491,7 +491,7 @@ mod vec_tests
         let mut allocator = IndexAllocator::new();
         let index = allocator.allocate();
 
-        let mut vec = GenerationalVec::<i32>::new();
+        let mut vec = ExposedGenVec::<i32>::new();
         vec.set(index, 3);
 
         vec[index] = 5;
