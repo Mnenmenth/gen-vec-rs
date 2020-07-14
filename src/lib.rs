@@ -1,6 +1,6 @@
 //! Vector of reusable, generational indices that owns the contained values
 //!
-//! Inspired by Catherine West's closing keynote at RustConf 2018: https://kyren.github.io/2018/09/14/rustconf-talk.html
+//! [Inspired by Catherine West's closing keynote at RustConf 2018](https://kyren.github.io/2018/09/14/rustconf-talk.html)
 //!
 //! ## Closed vs. Exposed index allocation implementations
 //!
