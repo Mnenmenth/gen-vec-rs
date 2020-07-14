@@ -31,7 +31,7 @@ pub struct GenerationalVec<T>
 
 impl<T> GenerationalVec<T>
 {
-    /// Create an empty `GenerationalVec`
+    /// Returns an empty `GenerationalVec`
     pub fn new() -> GenerationalVec<T>
     {
         GenerationalVec
@@ -43,7 +43,7 @@ impl<T> GenerationalVec<T>
         }
     }
 
-    /// Create an empty `GenerationVec` and reserve `capacity`
+    /// Returns a `GenerationalVec` with initial capacity of `capacity`
     pub fn with_capacity(capacity: usize) -> GenerationalVec<T>
     {
         GenerationalVec
@@ -69,7 +69,6 @@ impl<T> GenerationalVec<T>
     }
 
     /// Internal reserved capacity of the `GenerationalVec`
-    /// This may be more depending on the number of freed indices
     pub fn capacity(&self) -> usize
     {
         self.items.capacity()
@@ -99,7 +98,7 @@ impl<T> GenerationalVec<T>
 
             if self.items.len() > 0
             {
-                let last_index = self.items.len()-1;
+                let last_index = self.items.len().saturating_sub(1);
                 // Add all new reserved
                 for i in last_index..(last_index+additional)
                 {
@@ -110,6 +109,7 @@ impl<T> GenerationalVec<T>
         }
     }
 
+    /// Does the `GenerationalVec` contain `index`
     pub fn contains(&self, index: Index) -> bool
     {
         self.get(index).is_some()
@@ -144,7 +144,7 @@ impl<T> GenerationalVec<T>
                 {
                     self.items.push(Some(Item{ value, generation: self.generation }));
                     self.length += 1;
-                    Index{ index: self.items.len()-1, generation: self.generation }
+                    Index{ index: self.items.len().saturating_sub(1), generation: self.generation }
                 }
         }
     }
@@ -179,7 +179,7 @@ impl<T> GenerationalVec<T>
                 {
                     let removed = std::mem::replace(&mut self.items[index.index], None).expect("replaced vec item");
                     self.generation += 1;
-                    self.length -= 1;
+                    self.length = self.length.saturating_sub(1);
                     self.free_indices.push_back(index.index);
                     Some(removed.value)
                 },
@@ -198,14 +198,14 @@ mod tests {
     fn insert()
     {
         let mut givec = GenerationalVec::new();
-        let i = givec.insert(3);
-        assert_eq!(i.index, 0);
-        assert_eq!(i.generation, 0);
+        let index = givec.insert(3);
+        assert_eq!(index.index, 0);
+        assert_eq!(index.generation, 0);
         assert_eq!(givec.len(), 1);
 
-        let i = givec.insert(4);
-        assert_eq!(i.index, 1);
-        assert_eq!(i.generation, 0);
+        let index = givec.insert(4);
+        assert_eq!(index.index, 1);
+        assert_eq!(index.generation, 0);
         assert_eq!(givec.len(), 2);
     }
 
@@ -213,12 +213,12 @@ mod tests {
     fn get()
     {
         let mut givec = GenerationalVec::new();
-        let i = givec.insert(3);
-        let item = givec.get(i).unwrap();
+        let index = givec.insert(3);
+        let item = givec.get(index).unwrap();
         assert_eq!(*item, 3);
 
-        let i = givec.insert(4);
-        let item = givec.get(i).unwrap();
+        let index = givec.insert(4);
+        let item = givec.get(index).unwrap();
         assert_eq!(*item, 4);
     }
 
@@ -226,25 +226,25 @@ mod tests {
     fn get_mut()
     {
         let mut givec = GenerationalVec::new();
-        let i = givec.insert(3);
-        let item = givec.get_mut(i).unwrap();
+        let index = givec.insert(3);
+        let item = givec.get_mut(index).unwrap();
         *item = 1;
-        assert_eq!(*givec.get(i).unwrap(), 1);
+        assert_eq!(*givec.get(index).unwrap(), 1);
     }
 
     #[test]
     fn remove()
     {
         let mut givec = GenerationalVec::new();
-        let i = givec.insert(3);
-        let item = givec.remove(i).unwrap();
+        let index = givec.insert(3);
+        let item = givec.remove(index).unwrap();
         assert_eq!(item, 3);
         assert_eq!(givec.len(), 0);
-        assert_eq!(givec.get(i), None);
+        assert_eq!(givec.get(index), None);
 
-        let i2 = givec.insert(4);
-        assert_eq!(i2.index, 0);
-        assert_eq!(i2.generation, 1);
+        let index = givec.insert(4);
+        assert_eq!(index.index, 0);
+        assert_eq!(index.generation, 1);
         assert_eq!(givec.len(), 1);
     }
 
@@ -253,15 +253,17 @@ mod tests {
     {
         let mut vec = GenerationalVec::new();
         vec.insert(4);
-        let gen = vec.insert(5).generation;
+        let index = vec.insert(5);
 
         vec.clear();
         assert_eq!(vec.free_indices.len(), 2);
+        assert!(!vec.contains(index));
 
         assert_eq!(vec.len(), 0);
-        let item = vec.insert(1);
-        assert_eq!(item.index, 0);
-        assert_eq!(item.generation, gen+1);
+        let index1 = vec.insert(1);
+        assert_eq!(index1.index, 0);
+        assert_eq!(index1.generation, index.generation+1);
+        assert!(vec.contains(index1));
     }
 
     #[test]
@@ -282,8 +284,8 @@ mod tests {
         assert!(!vec.is_empty());
         vec.clear();
         assert!(vec.is_empty());
-        let i = vec.insert(4);
-        vec.remove(i);
+        let index = vec.insert(4);
+        vec.remove(index);
         assert!(vec.is_empty());
     }
 
@@ -298,5 +300,19 @@ mod tests {
 
         vec = GenerationalVec::with_capacity(5);
         assert_eq!(vec.capacity(), 5);
+    }
+
+    #[test]
+    fn contains()
+    {
+        let mut vec = GenerationalVec::<i32>::new();
+        let index = vec.insert(3);
+        assert!(vec.contains(index));
+        vec.remove(index);
+        assert!(!vec.contains(index));
+        let index = vec.insert(5);
+
+        vec = GenerationalVec::new();
+        assert!(!vec.contains(index));
     }
 }
