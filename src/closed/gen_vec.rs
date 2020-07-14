@@ -1,23 +1,8 @@
-//! Generational Index Vec
+/// Generational Index Vec
 
 use std::vec::Vec;
 use std::collections::VecDeque;
-
-/// An index of a `GenerationalVec`
-#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Copy, Debug)]
-pub struct Index
-{
-    index: usize,
-    generation: usize
-}
-
-/// An item within a `GenerationalVec`
-#[derive(Debug)]
-struct Item<T>
-{
-    value: T,
-    generation: usize
-}
+use crate::{Index, Item};
 
 /// A vector with reusable indices
 #[derive(Debug)]
@@ -192,7 +177,7 @@ impl<T> GenerationalVec<T>
 
 #[cfg(test)]
 mod tests {
-    use crate::gen_vec::GenerationalVec;
+    use crate::closed::GenerationalVec;
 
     #[test]
     fn insert()
