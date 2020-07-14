@@ -1,21 +1,14 @@
-use std::
+use crate::
 {
-    vec,
-    vec::Vec,
-    collections::VecDeque,
-    iter,
-    slice
+    Index,
+    exposed::{IndexAllocator, ExposedGenVec, IntoIter, Iter, IterMut}
 };
-use crate::{Index, Item};
 
-/// A vector with reusable indices
 #[derive(Debug)]
 pub struct ClosedGenVec<T>
 {
-    free_indices: VecDeque<usize>,
-    items: Vec<Option<Item<T>>>,
-    generation: usize,
-    length: usize
+    allocator: IndexAllocator,
+    vec: ExposedGenVec<T>
 }
 
 impl<T> ClosedGenVec<T>
@@ -32,10 +25,8 @@ impl<T> ClosedGenVec<T>
     {
         ClosedGenVec
         {
-            free_indices: VecDeque::new(),
-            items: Vec::new(),
-            generation: 0,
-            length: 0
+            allocator: IndexAllocator::new(),
+            vec: ExposedGenVec::new()
         }
     }
 
@@ -54,14 +45,12 @@ impl<T> ClosedGenVec<T>
     {
         ClosedGenVec
         {
-            free_indices: VecDeque::with_capacity(capacity),
-            items: Vec::with_capacity(capacity),
-            generation: 0,
-            length: 0
+            allocator: IndexAllocator::with_capacity(capacity),
+            vec: ExposedGenVec::with_capacity(capacity)
         }
     }
 
-    /// Number of active `Item`s within the `ClosedGenVec`
+    /// Number of active `Item`s within the vec
     ///
     /// The internal item vec may actually be larger depending on the number of freed indices
     ///
@@ -80,7 +69,7 @@ impl<T> ClosedGenVec<T>
     /// ```
     pub fn len(&self) -> usize
     {
-        self.length
+        self.allocator.num_active()
     }
 
     /// Returns `true` if there are no active items
@@ -102,10 +91,10 @@ impl<T> ClosedGenVec<T>
     /// ```
     pub fn is_empty(&self) -> bool
     {
-        self.length <= 0
+        self.allocator.num_active() == 0
     }
 
-    /// Reserved capacity within the `ClosedGenVec`
+    /// Reserved capacity within the vec
     ///
     /// # Examples
     ///
@@ -117,40 +106,7 @@ impl<T> ClosedGenVec<T>
     /// ```
     pub fn capacity(&self) -> usize
     {
-        self.items.capacity()
-    }
-
-    /// Free all items
-    ///
-    /// Internal capacity will not change. Internally this
-    /// is performed as all `Some(_)` being replaced with `None`
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use gen_vec::Index;
-    /// use gen_vec::closed::ClosedGenVec;
-    /// 
-    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
-    ///
-    /// let index: Index = vec.insert(42);
-    /// assert!(vec.contains(index));
-    ///
-    /// vec.clear();
-    ///
-    /// assert!(!vec.contains(index));
-    /// ```
-    pub fn clear(&mut self)
-    {
-        self.free_indices.clear();
-        for i in 0..self.items.len()
-        {
-            self.free_indices.push_back(i);
-        }
-        self.items.clear();
-
-        self.length = 0;
-        self.generation += 1;
+        self.allocator.capacity()
     }
 
     /// Reserves extra space for *at least* `additional` more elements
@@ -174,22 +130,26 @@ impl<T> ClosedGenVec<T>
     /// ```
     pub fn reserve(&mut self, additional: usize)
     {
-        if additional > 0
-        {
-            self.items.reserve(additional);
-            self.free_indices.reserve(additional);
+        self.allocator.reserve(additional);
+        self.vec.reserve(additional);
+    }
 
-            if self.items.len() > 0
-            {
-                let last_index = self.items.len().saturating_sub(1);
-                // Add all new reserved
-                for i in last_index..(last_index+additional)
-                {
-                    self.free_indices.push_back(i);
-                    self.items.push(None);
-                }
-            }
-        }
+    /// Insert `value` and return an associated `Index`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::ClosedGenVec;
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
+    ///
+    /// let index: Index = vec.insert(23);
+    /// ```
+    pub fn insert(&mut self, value: T) -> Index
+    {
+        let index = self.allocator.allocate();
+        self.vec.set(index, value);
+        index
     }
 
     /// Returns `true` if the `index` points to a valid item within
@@ -210,101 +170,7 @@ impl<T> ClosedGenVec<T>
     /// ```
     pub fn contains(&self, index: Index) -> bool
     {
-        self.get(index).is_some()
-    }
-
-    /// Insert `value` and return an associated `Index`
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use gen_vec::Index;
-    /// use gen_vec::closed::ClosedGenVec;
-    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
-    ///
-    /// let index: Index = vec.insert(23);
-    /// ```
-    pub fn insert(&mut self, value: T) -> Index
-    {
-        // Get the next free index
-        match self.free_indices.pop_front()
-        {
-            // If an index was returned, modify the item at that position
-            Some(index) =>
-                {
-                    match self.items.get_mut(index) {
-                        Some(None) =>
-                            {
-                                self.items[index] = Some(Item{ value, generation: self.generation });
-                                self.length += 1;
-                                Index{ index, generation: self.generation }
-                            }
-                        // If index contained an Item, the index was invalid so try again
-                        _ =>
-                            {
-                                self.insert(value)
-                            }
-
-                    }
-                },
-            // If there are no free indices, add it to the end of the item vec
-            None =>
-                {
-                    self.items.push(Some(Item{ value, generation: self.generation }));
-                    self.length += 1;
-                    Index{ index: self.items.len().saturating_sub(1), generation: self.generation }
-                }
-        }
-    }
-
-    /// Returns an immutable reference to the value of `index` if `index` is valid
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use gen_vec::Index;
-    /// use gen_vec::closed::ClosedGenVec;
-    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
-    ///
-    /// let index: Index = vec.insert(23);
-    ///
-    /// let value: &i32 = vec.get(index).unwrap();
-    /// assert_eq!(*value, 23);
-    /// ```
-    pub fn get(&self, index: Index) -> Option<&T>
-    {
-        match self.items.get(index.index)
-        {
-            Some(Some(item)) if index.generation == item.generation => Some(&item.value),
-            _ => None
-        }
-    }
-
-    /// Returns a mutable reference to the value of `index` if `index` is valid
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use gen_vec::Index;
-    /// use gen_vec::closed::ClosedGenVec;
-    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
-    ///
-    /// let index: Index = vec.insert(23);
-    ///
-    /// let mut value: &mut i32 = vec.get_mut(index).unwrap();
-    /// assert_eq!(*value, 23);
-    ///
-    /// *value = 0;
-    /// let value = vec.get(index).unwrap();
-    /// assert_eq!(*value, 0);
-    /// ```
-    pub fn get_mut(&mut self, index: Index) -> Option<&mut T>
-    {
-        match self.items.get_mut(index.index)
-        {
-            Some(Some(item)) if index.generation == item.generation => Some(&mut item.value),
-            _ => None
-        }
+        self.allocator.is_active(index)
     }
 
     /// Returns the value of `index` if `index` is valid
@@ -328,18 +194,76 @@ impl<T> ClosedGenVec<T>
     /// ```
     pub fn remove(&mut self, index: Index) -> Option<T>
     {
-        match self.items.get(index.index)
-        {
-            Some(Some(item)) if index.generation == item.generation =>
-                {
-                    let removed = std::mem::replace(&mut self.items[index.index], None).expect("replaced vec item");
-                    self.generation += 1;
-                    self.length = self.length.saturating_sub(1);
-                    self.free_indices.push_back(index.index);
-                    Some(removed.value)
-                },
-            _ => None
-        }
+        let removed = self.vec.remove(index);
+        self.allocator.deallocate(index);
+        removed
+    }
+
+    /// Free all items
+    ///
+    /// Internal capacity will not change. Internally this
+    /// is performed as all `Some(_)` being replaced with `None`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::ClosedGenVec;
+    ///
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
+    ///
+    /// let index: Index = vec.insert(42);
+    /// assert!(vec.contains(index));
+    ///
+    /// vec.clear();
+    ///
+    /// assert!(!vec.contains(index));
+    /// ```
+    pub fn clear(&mut self)
+    {
+        self.allocator.deallocate_all();
+    }
+
+    /// Returns an immutable reference to the value of `index` if `index` is valid
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::ClosedGenVec;
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
+    ///
+    /// let index: Index = vec.insert(23);
+    ///
+    /// let value: &i32 = vec.get(index).unwrap();
+    /// assert_eq!(*value, 23);
+    /// ```
+    pub fn get(&self, index: Index) -> Option<&T>
+    {
+        self.vec.get(index)
+    }
+
+    /// Returns a mutable reference to the value of `index` if `index` is valid
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::ClosedGenVec;
+    /// let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
+    ///
+    /// let index: Index = vec.insert(23);
+    ///
+    /// let mut value: &mut i32 = vec.get_mut(index).unwrap();
+    /// assert_eq!(*value, 23);
+    ///
+    /// *value = 0;
+    /// let value = vec.get(index).unwrap();
+    /// assert_eq!(*value, 0);
+    /// ```
+    pub fn get_mut(&mut self, index: Index) -> Option<&mut T>
+    {
+        self.vec.get_mut(index)
     }
 
     /// Returns an iterator of immutable references to the vec elements
@@ -359,14 +283,10 @@ impl<T> ClosedGenVec<T>
     /// {
     ///     println!("Index: {:?}, Value: {}", index, value);
     /// }
-    ///
     /// ```
     pub fn iter(&self) -> Iter<T>
     {
-        Iter
-        {
-            internal: self.items.iter().enumerate()
-        }
+        self.vec.iter()
     }
 
     /// Returns an iterator of mutable references to the vec elements
@@ -390,35 +310,7 @@ impl<T> ClosedGenVec<T>
     /// ```
     pub fn iter_mut(&mut self) -> IterMut<T>
     {
-        IterMut
-        {
-            internal: self.items.iter_mut().enumerate()
-        }
-    }
-
-}
-
-/// Struct for consuming a `ClosedGenVec` into an iterator
-pub struct IntoIter<T>
-{
-    internal: iter::Enumerate<vec::IntoIter<Option<Item<T>>>>
-}
-
-impl<T> Iterator for IntoIter<T>
-{
-    type Item = (Index, T);
-
-    fn next(&mut self) -> Option<Self::Item>
-    {
-        loop
-        {
-            match self.internal.next()
-            {
-                Some((_, None)) => { continue; },
-                Some((index, Some(item))) => return Some((Index { index, generation: item.generation}, item.value)),
-                _ => return None
-            };
-        }
+        self.vec.iter_mut()
     }
 }
 
@@ -429,34 +321,7 @@ impl<T> IntoIterator for ClosedGenVec<T>
 
     fn into_iter(self) -> Self::IntoIter
     {
-        IntoIter
-        {
-            internal: self.items.into_iter().enumerate()
-        }
-    }
-}
-
-/// Struct for creating an iterator over an immutable `ClosedGenVec` reference
-pub struct Iter<'a, T: 'a>
-{
-    internal: iter::Enumerate<slice::Iter<'a, Option<Item<T>>>>
-}
-
-impl<'a, T> Iterator for Iter<'a, T>
-{
-    type Item = (Index, &'a T);
-
-    fn next(&mut self) -> Option<Self::Item>
-    {
-        loop
-        {
-            match self.internal.next()
-            {
-                Some((_, None)) => { continue; },
-                Some((index, Some(item))) => return Some((Index { index, generation: item.generation}, &item.value)),
-                _ => return None
-            };
-        }
+        self.vec.into_iter()
     }
 }
 
@@ -468,30 +333,6 @@ impl<'a, T> IntoIterator for &'a ClosedGenVec<T>
     fn into_iter(self) -> Self::IntoIter
     {
         self.iter()
-    }
-}
-
-/// Struct for creating an iterator over a mutable `ClosedGenVec` reference
-pub struct IterMut<'a, T: 'a>
-{
-    internal: iter::Enumerate<slice::IterMut<'a, Option<Item<T>>>>
-}
-
-impl<'a, T: 'a> Iterator for IterMut<'a, T>
-{
-    type Item = (Index, &'a mut T);
-
-    fn next(&mut self) -> Option<Self::Item>
-    {
-        loop
-        {
-            match self.internal.next()
-            {
-                Some((_, None)) => { continue; },
-                Some((index, Some(item))) => return Some((Index { index, generation: item.generation}, &mut item.value)),
-                _ => return None
-            };
-        }
     }
 }
 
@@ -586,17 +427,15 @@ mod tests {
     fn clear()
     {
         let mut vec = ClosedGenVec::new();
-        vec.insert(4);
-        let index = vec.insert(5);
+        let index = vec.insert(4);
+        let index1 = vec.insert(5);
 
         vec.clear();
-        assert_eq!(vec.free_indices.len(), 2);
         assert!(!vec.contains(index));
+        assert!(!vec.contains(index1));
 
         assert_eq!(vec.len(), 0);
         let index1 = vec.insert(1);
-        assert_eq!(index1.index, 0);
-        assert_eq!(index1.generation, index.generation+1);
         assert!(vec.contains(index1));
     }
 
