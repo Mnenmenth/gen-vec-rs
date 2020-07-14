@@ -3,6 +3,7 @@ use std::vec::Vec;
 use crate::Index;
 
 /// An allocated index of a `IndexAllocator`
+#[derive(Debug)]
 struct AllocatedIndex
 {
     is_free: bool,
@@ -10,6 +11,7 @@ struct AllocatedIndex
 }
 
 /// Allocates and deallocates indices for a `ExposedGenVec`
+#[derive(Debug)]
 pub struct IndexAllocator
 {
     free_indices: VecDeque<usize>,
