@@ -3,4 +3,5 @@ name = "gen-vec"
 version = "0.2.0"
 authors = ["Earl Kennedy <mnenmenth@gmail.com>"]
 edition = "2018"
+license = "MIT"
 description = "Vector indexed with generational indices"
