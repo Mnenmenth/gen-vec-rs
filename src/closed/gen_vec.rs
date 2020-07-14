@@ -353,7 +353,7 @@ impl<T> GenerationalVec<T>
     /// ```
     /// use gen_vec::closed::GenerationalVec;
     ///
-    /// let mut vec = GenerationalVec::new();
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
     /// vec.insert(0);
     /// vec.insert(1);
     ///
@@ -380,7 +380,7 @@ impl<T> GenerationalVec<T>
     /// ```
     /// use gen_vec::closed::GenerationalVec;
     ///
-    /// let mut vec = GenerationalVec::new();
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
     /// vec.insert(0);
     /// vec.insert(1);
     ///

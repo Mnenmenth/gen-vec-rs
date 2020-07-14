@@ -119,6 +119,35 @@ impl IndexAllocator
         }
     }
 
+    /// Frees all active indices and adds them to the pool of free indices
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::exposed::IndexAllocator;
+    /// use gen_vec::Index;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// for _ in 0..10
+    /// {
+    ///     allocator.allocate();
+    /// }
+    /// assert_eq!(allocator.num_active(), 10);
+    /// assert_eq!(allocator.num_free(), 0);
+    ///
+    /// allocator.deallocate_all();
+    /// assert_eq!(allocator.num_active(), 0);
+    /// assert_eq!(allocator.num_free(), 10);
+    /// ```
+    pub fn deallocate_all(&mut self)
+    {
+        for (index, alloc_index) in self.active_indices.iter_mut().enumerate()
+        {
+            alloc_index.is_free = true;
+            self.free_indices.push_back(index);
+        }
+    }
+
     /// Reserved capacity within the `IndexAllocator`
     ///
     /// # Examples
@@ -270,6 +299,22 @@ mod allocator_tests
         let index = allocator.allocate();
         assert_eq!(index.index, 0);
         assert_eq!(index.generation, 1);
+    }
+
+    #[test]
+    fn deallocate_all()
+    {
+        let mut allocator: IndexAllocator = IndexAllocator::new();
+        for _ in 0..10
+        {
+            allocator.allocate();
+        }
+        assert_eq!(allocator.num_active(), 10);
+        assert_eq!(allocator.num_free(), 0);
+
+        allocator.deallocate_all();
+        assert_eq!(allocator.num_active(), 0);
+        assert_eq!(allocator.num_free(), 10);
     }
 
     #[test]

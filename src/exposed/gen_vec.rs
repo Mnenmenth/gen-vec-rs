@@ -1,5 +1,10 @@
-use std::vec::Vec;
-use crate::{Index, Item};
+use std::
+{
+    vec,
+    vec::Vec,
+    iter,
+    slice
+};use crate::{Index, Item};
 
 /// Generationally indexed vector
 #[derive(Debug)]
@@ -197,6 +202,166 @@ impl<T> GenerationalVec<T>
             _ => None
         }
     }
+
+    /// Returns an iterator of immutable references to the vec elements
+    ///
+    /// Each iterator step returns (Index, &T)
+    ///
+    /// # Examples
+    ///
+    /// ```
+
+    /// ```
+    pub fn iter(&self) -> Iter<T>
+    {
+        Iter
+        {
+            internal: self.items.iter().enumerate()
+        }
+    }
+
+    /// Returns an iterator of mutable references to the vec elements
+    ///
+    /// Each iterator step returns (Index, &mut T)
+    ///
+    /// # Examples
+    ///
+    /// ```
+
+    /// ```
+    pub fn iter_mut(&mut self) -> IterMut<T>
+    {
+        IterMut
+        {
+            internal: self.items.iter_mut().enumerate()
+        }
+    }
+}
+
+/// Struct for consuming a `GenerationalVec` into an iterator
+pub struct IntoIter<T>
+{
+    internal: iter::Enumerate<vec::IntoIter<Option<Item<T>>>>
+}
+
+impl<T> Iterator for IntoIter<T>
+{
+    type Item = (Index, T);
+
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        loop
+        {
+            match self.internal.next()
+            {
+                Some((_, None)) => { continue; },
+                Some((index, Some(item))) => return Some((Index { index, generation: item.generation}, item.value)),
+                _ => return None
+            };
+        }
+    }
+}
+
+impl<T> IntoIterator for GenerationalVec<T>
+{
+    type Item = (Index, T);
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter
+    {
+        IntoIter
+        {
+            internal: self.items.into_iter().enumerate()
+        }
+    }
+}
+
+/// Struct for creating an iterator over an immutable `GenerationalVec` reference
+pub struct Iter<'a, T: 'a>
+{
+    internal: iter::Enumerate<slice::Iter<'a, Option<Item<T>>>>
+}
+
+impl<'a, T> Iterator for Iter<'a, T>
+{
+    type Item = (Index, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        loop
+        {
+            match self.internal.next()
+            {
+                Some((_, None)) => { continue; },
+                Some((index, Some(item))) => return Some((Index { index, generation: item.generation}, &item.value)),
+                _ => return None
+            };
+        }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a GenerationalVec<T>
+{
+    type Item = (Index, &'a T);
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter
+    {
+        self.iter()
+    }
+}
+
+/// Struct for creating an iterator over a mutable `GenerationalVec` reference
+pub struct IterMut<'a, T: 'a>
+{
+    internal: iter::Enumerate<slice::IterMut<'a, Option<Item<T>>>>
+}
+
+impl<'a, T: 'a> Iterator for IterMut<'a, T>
+{
+    type Item = (Index, &'a mut T);
+
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        loop
+        {
+            match self.internal.next()
+            {
+                Some((_, None)) => { continue; },
+                Some((index, Some(item))) => return Some((Index { index, generation: item.generation}, &mut item.value)),
+                _ => return None
+            };
+        }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a mut GenerationalVec<T>
+{
+    type Item = (Index, &'a mut T);
+    type IntoIter = IterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter
+    {
+        self.iter_mut()
+    }
+}
+
+impl<T> std::ops::Index<Index> for GenerationalVec<T>
+{
+    type Output = T;
+
+    fn index(&self, index: Index) -> &Self::Output
+    {
+        self.get(index).expect(format!("Invalid index: {:?}", index).as_str())
+    }
+}
+
+impl<T> std::ops::IndexMut<Index> for GenerationalVec<T>
+{
+    fn index_mut(&mut self, index: Index) -> &mut Self::Output
+    {
+        self.get_mut(index).expect(format!("Invalid index: {:?}", index).as_str())
+    }
 }
 
 #[cfg(test)]
@@ -257,5 +422,79 @@ mod vec_tests
 
         *vec.get_mut(index).unwrap() = 2;
         assert_eq!(*vec.get(index).unwrap(), 2);
+    }
+
+    #[test]
+    fn iter()
+    {
+        let mut allocator = IndexAllocator::new();
+        let index = allocator.allocate();
+        let index1 = allocator.allocate();
+
+        let mut vec = GenerationalVec::<i32>::new();
+        vec.set(index, 4);
+        vec.set(index1, 5);
+
+        let mut iter = vec.iter();
+
+        let (i, value) = iter.next().unwrap();
+        assert_eq!(i, index);
+        assert_eq!(*value, 4);
+
+        let (i, value) = iter.next().unwrap();
+        assert_eq!(i, index1);
+        assert_eq!(*value, 5);
+    }
+
+    #[test]
+    fn iter_mut()
+    {
+        let mut allocator = IndexAllocator::new();
+        let index = allocator.allocate();
+        let index1 = allocator.allocate();
+
+        let mut vec = GenerationalVec::<i32>::new();
+        vec.set(index, 4);
+        vec.set(index1, 5);
+
+        let mut iter = vec.iter_mut();
+
+        let (i, value) = iter.next().unwrap();
+        assert_eq!(i, index);
+        assert_eq!(*value, 4);
+        *value = 0;
+
+        let (i, value) = iter.next().unwrap();
+        assert_eq!(i, index1);
+        assert_eq!(*value, 5);
+        *value = 1;
+
+        assert_eq!(*vec.get(index).unwrap(), 0);
+        assert_eq!(*vec.get(index1).unwrap(), 1);
+    }
+
+    #[test]
+    fn index()
+    {
+        let mut allocator = IndexAllocator::new();
+        let index = allocator.allocate();
+
+        let mut vec = GenerationalVec::<i32>::new();
+        vec.set(index, 4);
+
+        assert_eq!(vec[index], 4);
+    }
+
+    #[test]
+    fn index_mut()
+    {
+        let mut allocator = IndexAllocator::new();
+        let index = allocator.allocate();
+
+        let mut vec = GenerationalVec::<i32>::new();
+        vec.set(index, 3);
+
+        vec[index] = 5;
+        assert_eq!(*vec.get(index).unwrap(), 5);
     }
 }
