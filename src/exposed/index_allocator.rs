@@ -3,7 +3,7 @@ use std::vec::Vec;
 use crate::Index;
 
 /// An allocated index of a `IndexAllocator`
-pub struct AllocatedIndex
+struct AllocatedIndex
 {
     is_free: bool,
     generation: usize
@@ -19,6 +19,13 @@ pub struct IndexAllocator
 impl IndexAllocator
 {
     /// Returns a new empty `IndexAllocator`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::exposed::IndexAllocator;
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// ```
     pub fn new() -> IndexAllocator
     {
         IndexAllocator
@@ -28,7 +35,17 @@ impl IndexAllocator
         }
     }
 
-    /// Returns an `IndexAllocator` with initial capacity of `capacity`
+    /// Returns a `IndexAllocator` with initial capacity of `capacity`
+    ///
+    /// Allows the `IndexAllocator` to hold `capacity` elements before
+    /// allocating more space
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::exposed::IndexAllocator;
+    /// let mut allocator: IndexAllocator = IndexAllocator::with_capacity(5);
+    /// ```
     pub fn with_capacity(capacity: usize) -> IndexAllocator
     {
         IndexAllocator
@@ -39,7 +56,19 @@ impl IndexAllocator
     }
 
     /// Allocates and returns a new `Index`
-    /// Activates a freed index if there are any, otherwise adds a new index to `active_indices`
+    ///
+    /// Activates a freed index if there are any, otherwise creates
+    /// and adds a new index to `active_indices`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::IndexAllocator;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// let index: Index = allocator.allocate();
+    /// ```
     pub fn allocate(&mut self) -> Index
     {
         match self.free_indices.pop_front()
@@ -66,7 +95,21 @@ impl IndexAllocator
         }
     }
 
-    /// Frees `index` if it hasn't been already
+    /// Frees `index` if it hasn't been already.
+    ///
+    /// Afterwards, `index` is added to the pool of free indices
+    /// available for reuse
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::IndexAllocator;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// let index: Index = allocator.allocate();
+    /// allocator.deallocate(index);
+    /// ```
     pub fn deallocate(&mut self, index: Index)
     {
         if self.is_active(index)
@@ -76,13 +119,37 @@ impl IndexAllocator
         }
     }
 
-    /// Internal reserved capacity of the `IndexAllocator`
+    /// Reserved capacity within the `IndexAllocator`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::exposed::IndexAllocator;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::with_capacity(5);
+    /// assert_eq!(allocator.capacity(), 5);
+    /// ```
     pub fn capacity(&self) -> usize
     {
         self.active_indices.capacity()
     }
 
-    /// `additional` space is reserved on top of the existing capacity
+    /// Reserves extra space for *at least* `additional` more elements
+    ///
+    /// More space may be allocated to avoid frequent re-allocations
+    /// (as per the specifications of std::vec::Vec)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::IndexAllocator;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// let index: Index = allocator.allocate();
+    /// allocator.reserve(4);
+    /// assert!(allocator.capacity() >= 4);
+    /// ```
     pub fn reserve(&mut self, additional: usize)
     {
         if additional > 0
@@ -103,7 +170,20 @@ impl IndexAllocator
         }
     }
 
-    /// Is `index` active and not deallocated
+    /// Returns if `index` is still active and hasn't been deallocated
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::IndexAllocator;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// let index: Index = allocator.allocate();
+    /// assert!(allocator.is_active(index));
+    /// allocator.deallocate(index);
+    /// assert!(!allocator.is_active(index));
+    /// ```
     pub fn is_active(&self, index: Index) -> bool
     {
         match self.active_indices.get(index.index)
@@ -113,13 +193,47 @@ impl IndexAllocator
         }
     }
 
-    /// Number of free indices waiting to be allocated
+    /// Returns the number of free indices waiting to be allocated and reused
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::IndexAllocator;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// assert_eq!(allocator.num_free(), 0);
+    ///
+    /// let index: Index = allocator.allocate();
+    ///
+    /// allocator.deallocate(index);
+    /// assert_eq!(allocator.num_free(), 1);
+    ///
+    /// let index: Index = allocator.allocate();
+    /// assert_eq!(allocator.num_free(), 0);
+    /// ```
     pub fn num_free(&self) -> usize
     {
         self.free_indices.len()
     }
 
-    /// Number of active indices
+    /// Returns the number of active indices
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::IndexAllocator;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// assert_eq!(allocator.num_active(), 0);
+    ///
+    /// let index: Index = allocator.allocate();
+    /// assert_eq!(allocator.num_active(), 1);
+    ///
+    /// allocator.deallocate(index);
+    /// assert_eq!(allocator.num_active(), 0);
+    /// ```
     pub fn num_active(&self) -> usize
     {
         self.active_indices.len().saturating_sub(self.free_indices.len())

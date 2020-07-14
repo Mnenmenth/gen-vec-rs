@@ -15,6 +15,7 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
+    /// use gen_vec::exposed::GenerationalVec;
     /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
     /// ```
     pub fn new() -> GenerationalVec<T>
@@ -33,6 +34,7 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
+    /// use gen_vec::exposed::GenerationalVec;
     /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(5);
     /// ```
     pub fn with_capacity(capacity: usize) -> GenerationalVec<T>
@@ -48,6 +50,7 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
+    /// use gen_vec::exposed::GenerationalVec;
     /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(5);
     /// assert_eq!(vec.capacity(), 5);
     /// ```
@@ -64,22 +67,35 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
-    /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(2);
-    /// vec.reserve(3);
-    /// assert_eq!(vec.capacity(), 5);
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// 
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// let index: Index = allocator.allocate();
+    /// 
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// assert_eq!(vec.capacity(), 0);
+    ///
+    /// vec.set(index, 0);
+    ///
+    /// vec.reserve(4);
+    /// assert!(vec.capacity() >= 4);
     /// ```
     pub fn reserve(&mut self, additional: usize)
     {
         self.items.reserve(additional)
     }
 
-    /// Returns `true` if the `index` points to a valid item within the vec
+    /// Returns `true` if the `index` points to a valid item
     ///
     /// # Examples
     ///
     /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
-    /// let index = allocator.allocate();
+    /// let index: Index = allocator.allocate();
     ///
     /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
     /// assert!(!vec.contains(index));
@@ -98,8 +114,11 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
-    /// let index = allocator.allocate();
+    /// let index: Index = allocator.allocate();
     ///
     /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
     /// vec.set(index, 0);
@@ -131,12 +150,15 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
-    /// let index = allocator.allocate();
+    /// let index: Index = allocator.allocate();
     ///
     /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
     /// vec.set(index, 0);
-    /// let value: &i32 = vec.get(index);
+    /// let value: &i32 = vec.get(index).unwrap();
     /// assert_eq!(*value, 0);
     /// ```
     pub fn get(&self, index: Index) -> Option<&T>
@@ -153,15 +175,18 @@ impl<T> GenerationalVec<T>
     /// # Examples
     ///
     /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::{IndexAllocator, GenerationalVec};
+    /// 
     /// let mut allocator: IndexAllocator = IndexAllocator::new();
-    /// let index = allocator.allocate();
+    /// let index: Index = allocator.allocate();
     ///
     /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
     /// vec.set(index, 0);
-    /// let mut value: &mut i32 = vec.get_mut(index);
+    /// let mut value: &mut i32 = vec.get_mut(index).unwrap();
     /// assert_eq!(*value, 0);
     /// *value = 1;
-    /// let value = vec.get(index);
+    /// let value = vec.get(index).unwrap();
     /// assert_eq!(*value, 1);
     /// ```
     pub fn get_mut(&mut self, index: Index) -> Option<&mut T>

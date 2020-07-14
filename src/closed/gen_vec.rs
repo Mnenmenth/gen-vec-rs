@@ -17,6 +17,13 @@ pub struct GenerationalVec<T>
 impl<T> GenerationalVec<T>
 {
     /// Returns an empty `GenerationalVec`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::closed::GenerationalVec;
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// ```
     pub fn new() -> GenerationalVec<T>
     {
         GenerationalVec
@@ -29,6 +36,16 @@ impl<T> GenerationalVec<T>
     }
 
     /// Returns a `GenerationalVec` with initial capacity of `capacity`
+    ///
+    /// Allows the `GenerationalVec` to hold `capacity` elements before
+    /// allocating more space
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::closed::GenerationalVec;
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(5);
+    /// ```
     pub fn with_capacity(capacity: usize) -> GenerationalVec<T>
     {
         GenerationalVec
@@ -41,25 +58,84 @@ impl<T> GenerationalVec<T>
     }
 
     /// Number of active `Item`s within the `GenerationalVec`
-    /// The internal vec may actually be larger depending on the number of freed indices
+    ///
+    /// The internal item vec may actually be larger depending on the number of freed indices
+    ///
+    /// # Examples
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    ///
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    ///
+    /// let index: Index = vec.insert(42);
+    /// assert_eq!(vec.len(), 1);
+    ///
+    /// vec.remove(index);
+    /// assert_eq!(vec.len(), 0);
+    /// ```
     pub fn len(&self) -> usize
     {
         self.length
     }
 
-    /// Are all items within `GenerationalVec` freed
+    /// Returns `true` if there are no active items
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    ///
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// assert!(vec.is_empty());
+    ///
+    /// let index: Index = vec.insert(23);
+    /// assert!(!vec.is_empty());
+    ///
+    /// vec.remove(index);
+    /// assert!(vec.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool
     {
         self.length <= 0
     }
 
-    /// Internal reserved capacity of the `GenerationalVec`
+    /// Reserved capacity within the `GenerationalVec`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::closed::GenerationalVec;
+    ///
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::with_capacity(5);
+    /// assert_eq!(vec.capacity(), 5);
+    /// ```
     pub fn capacity(&self) -> usize
     {
         self.items.capacity()
     }
 
-    /// Free all `Item`s within the `GenerationalVec`
+    /// Free all items
+    ///
+    /// Internal capacity will not change. Internally this
+    /// is performed as all `Some(_)` being replaced with `None`
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    /// 
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    ///
+    /// let index: Index = vec.insert(42);
+    /// assert!(vec.contains(index));
+    ///
+    /// vec.clear();
+    ///
+    /// assert!(!vec.contains(index));
+    /// ```
     pub fn clear(&mut self)
     {
         self.free_indices.clear();
@@ -73,7 +149,25 @@ impl<T> GenerationalVec<T>
         self.generation += 1;
     }
 
-    /// `additional` space is reserved on top of the existing capacity
+    /// Reserves extra space for *at least* `additional` more elements
+    ///
+    /// More space may be allocated to avoid frequent re-allocations
+    /// (as per the specifications of std::vec::Vec)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    ///
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    /// assert_eq!(vec.capacity(), 0);
+    ///
+    /// let index: Index = vec.insert(13);
+    ///
+    /// vec.reserve(4);
+    /// assert!(vec.capacity() >= 4)
+    /// ```
     pub fn reserve(&mut self, additional: usize)
     {
         if additional > 0
@@ -94,13 +188,38 @@ impl<T> GenerationalVec<T>
         }
     }
 
-    /// Does the `GenerationalVec` contain `index`
+    /// Returns `true` if the `index` points to a valid item within
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    ///
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    ///
+    /// let index: Index = vec.insert(124);
+    /// assert!(vec.contains(index));
+    ///
+    /// vec.remove(index);
+    /// assert!(!vec.contains(index));
+    /// ```
     pub fn contains(&self, index: Index) -> bool
     {
         self.get(index).is_some()
     }
 
-    /// Insert `value` in the `GenerationalVec` and return an associated `Index`
+    /// Insert `value` and return an associated `Index`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    ///
+    /// let index: Index = vec.insert(23);
+    /// ```
     pub fn insert(&mut self, value: T) -> Index
     {
         // Get the next free index
@@ -134,7 +253,20 @@ impl<T> GenerationalVec<T>
         }
     }
 
-    /// Get the immutable value at `index` if exists
+    /// Returns an immutable reference to the value of `index` if `index` is valid
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    ///
+    /// let index: Index = vec.insert(23);
+    ///
+    /// let value: &i32 = vec.get(index).unwrap();
+    /// assert_eq!(*value, 23);
+    /// ```
     pub fn get(&self, index: Index) -> Option<&T>
     {
         match self.items.get(index.index)
@@ -144,7 +276,24 @@ impl<T> GenerationalVec<T>
         }
     }
 
-    /// Get the mutable value at `index` if exists
+    /// Returns a mutable reference to the value of `index` if `index` is valid
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    ///
+    /// let index: Index = vec.insert(23);
+    ///
+    /// let mut value: &mut i32 = vec.get_mut(index).unwrap();
+    /// assert_eq!(*value, 23);
+    ///
+    /// *value = 0;
+    /// let value = vec.get(index).unwrap();
+    /// assert_eq!(*value, 0);
+    /// ```
     pub fn get_mut(&mut self, index: Index) -> Option<&mut T>
     {
         match self.items.get_mut(index.index)
@@ -154,8 +303,25 @@ impl<T> GenerationalVec<T>
         }
     }
 
-    /// Free the value stored at `index` if exists
-    /// Returns stored value if exists
+    /// Returns the value of `index` if `index` is valid
+    ///
+    /// Afterwards, `index` is added to the pool of free indices
+    /// available for reuse
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::closed::GenerationalVec;
+    ///
+    /// let mut vec: GenerationalVec<i32> = GenerationalVec::new();
+    ///
+    /// let index: Index = vec.insert(124);
+    /// assert!(vec.contains(index));
+    ///
+    /// vec.remove(index);
+    /// assert!(!vec.contains(index));
+    /// ```
     pub fn remove(&mut self, index: Index) -> Option<T>
     {
         match self.items.get(index.index)
@@ -182,55 +348,55 @@ mod tests {
     #[test]
     fn insert()
     {
-        let mut givec = GenerationalVec::new();
-        let index = givec.insert(3);
+        let mut vec = GenerationalVec::new();
+        let index = vec.insert(3);
         assert_eq!(index.index, 0);
         assert_eq!(index.generation, 0);
-        assert_eq!(givec.len(), 1);
+        assert_eq!(vec.len(), 1);
 
-        let index = givec.insert(4);
+        let index = vec.insert(4);
         assert_eq!(index.index, 1);
         assert_eq!(index.generation, 0);
-        assert_eq!(givec.len(), 2);
+        assert_eq!(vec.len(), 2);
     }
 
     #[test]
     fn get()
     {
-        let mut givec = GenerationalVec::new();
-        let index = givec.insert(3);
-        let item = givec.get(index).unwrap();
+        let mut vec = GenerationalVec::new();
+        let index = vec.insert(3);
+        let item = vec.get(index).unwrap();
         assert_eq!(*item, 3);
 
-        let index = givec.insert(4);
-        let item = givec.get(index).unwrap();
+        let index = vec.insert(4);
+        let item = vec.get(index).unwrap();
         assert_eq!(*item, 4);
     }
 
     #[test]
     fn get_mut()
     {
-        let mut givec = GenerationalVec::new();
-        let index = givec.insert(3);
-        let item = givec.get_mut(index).unwrap();
+        let mut vec = GenerationalVec::new();
+        let index = vec.insert(3);
+        let item = vec.get_mut(index).unwrap();
         *item = 1;
-        assert_eq!(*givec.get(index).unwrap(), 1);
+        assert_eq!(*vec.get(index).unwrap(), 1);
     }
 
     #[test]
     fn remove()
     {
-        let mut givec = GenerationalVec::new();
-        let index = givec.insert(3);
-        let item = givec.remove(index).unwrap();
+        let mut vec = GenerationalVec::new();
+        let index = vec.insert(3);
+        let item = vec.remove(index).unwrap();
         assert_eq!(item, 3);
-        assert_eq!(givec.len(), 0);
-        assert_eq!(givec.get(index), None);
+        assert_eq!(vec.len(), 0);
+        assert_eq!(vec.get(index), None);
 
-        let index = givec.insert(4);
+        let index = vec.insert(4);
         assert_eq!(index.index, 0);
         assert_eq!(index.generation, 1);
-        assert_eq!(givec.len(), 1);
+        assert_eq!(vec.len(), 1);
     }
 
     #[test]
