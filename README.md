@@ -1,4 +1,4 @@
- # gen-vec
+ # gen-vec [![Build Status](https://travis-ci.org/Mnenmenth/gen-vec-rs.svg?branch=master)](https://travis-ci.org/Mnenmenth/gen-vec-rs)
  
  Vector of reusable, generational indices that owns its values
 
