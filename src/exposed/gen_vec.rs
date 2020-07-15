@@ -7,8 +7,12 @@ use std::
 };
 use crate::{Index, Item};
 
-/// Generationally indexed vector
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
+
+/// Generationally indexed vector that relies on an independent `IndexAllocator`
 #[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ExposedGenVec<T>
 {
     items: Vec<Option<Item<T>>>

@@ -26,8 +26,12 @@
 //! Every time an `Index` is reused, the internal generation is incremented. This ensures that a deallocated
 //! `Index` handle can't access data that it no longer validly points to
 
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
+
 /// An index of a generational vec
 #[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Index
 {
     index: usize,
@@ -36,6 +40,7 @@ pub struct Index
 
 /// An item within a generational vec
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct Item<T>
 {
     value: T,

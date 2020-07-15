@@ -3,8 +3,12 @@ use crate::
     Index,
     exposed::{IndexAllocator, ExposedGenVec, IntoIter, Iter, IterMut}
 };
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
 
+/// Generationally indexed vector with an internal index allocator
 #[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ClosedGenVec<T>
 {
     allocator: IndexAllocator,

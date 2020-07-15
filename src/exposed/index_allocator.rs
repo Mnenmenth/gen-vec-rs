@@ -2,8 +2,12 @@ use std::collections::VecDeque;
 use std::vec::Vec;
 use crate::Index;
 
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
+
 /// An allocated index of a `IndexAllocator`
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct AllocatedIndex
 {
     is_free: bool,
@@ -12,6 +16,7 @@ struct AllocatedIndex
 
 /// Allocates and deallocates indices for a `ExposedGenVec`
 #[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct IndexAllocator
 {
     free_indices: VecDeque<usize>,

@@ -12,3 +12,6 @@ keywords = ["gen-vec", "generational", "vector", "ecs"]
 
 [badges]
 travis-ci = { repository = "Mnenmenth/gen-vec-rs" }
+
+[dependencies]
+serde = { version = "1.0.114", optional = true, features = ["derive"] }
