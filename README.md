@@ -25,3 +25,43 @@
 
  Every time an `Index` is reused, the internal generation is incremented. This ensures that a deallocated
  `Index` handle can't access data that it no longer validly points to
+ 
+ ### Usage
+ Add `gen-vec` to your `Cargo.toml`
+```toml
+[dependencies]
+gen-vec = "0.2.0"
+```
+Using the self-allocating `ClosedGenVec`
+```rust
+use gen_vec::Index;
+use gen_vec::closed::ClosedGenVec;
+
+let mut vec: ClosedGenVec<i32> = ClosedGenVec::new();
+
+let index: Index = vec.insert(42);
+assert!(vec.contains(index));
+
+let value: Option<&i32> = vec.get(index);
+assert_eq!(value, Some(&42));
+
+vec.remove(index);
+assert!(!vec.contains(index));
+```
+
+Using `ExposedGenVec` with `IndexAllocator`
+```rust
+use gen_vec::Index;
+use gen_vec::exposed::{IndexAllocator, ExposedGenVec};
+
+let mut allocator: IndexAllocator = IndexAllocator::new();
+
+let index: Index = allocator.allocate();
+
+let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
+vec.set(index, 5);
+assert!(vec.contains(index));
+
+let value: Option<&i32> = vec.get(index);
+assert_eq!(value, Some(&5));
+```

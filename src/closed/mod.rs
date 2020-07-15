@@ -11,6 +11,9 @@
 //! let index: Index = vec.insert(42);
 //! assert!(vec.contains(index));
 //!
+//! let value: Option<&i32> = vec.get(index);
+//! assert_eq!(value, Some(&42));
+//!
 //! vec.remove(index);
 //! assert!(!vec.contains(index));
 //! ```

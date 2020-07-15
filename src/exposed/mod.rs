@@ -12,6 +12,7 @@
 //!
 //! let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
 //! vec.set(index, 5);
+//! assert!(vec.contains(index));
 //!
 //! let value: Option<&i32> = vec.get(index);
 //! assert_eq!(value, Some(&5));
