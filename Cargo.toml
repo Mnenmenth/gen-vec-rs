@@ -1,9 +1,9 @@
 [package]
 name = "gen-vec"
 version = "0.2.0"
-authors = ["Earl Kennedy <mnenmenth@gmail.com>"]
+authors = ["Earl Kennedy"]
 edition = "2018"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 description = "Vector indexed with generational indices"
 readme = "README.md"
 repository = "https://github.com/Mnenmenth/gen-vec-rs"
