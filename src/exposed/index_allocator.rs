@@ -11,7 +11,7 @@ struct AllocatedIndex
 }
 
 /// Allocates and deallocates indices for a `ExposedGenVec`
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct IndexAllocator
 {
     free_indices: VecDeque<usize>,

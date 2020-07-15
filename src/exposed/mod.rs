@@ -13,8 +13,8 @@
 //! let mut vec: ExposedGenVec<i32> = ExposedGenVec::new();
 //! vec.set(index, 5);
 //!
-//! let value: &i32 = vec.get(index).unwrap();
-//! assert_eq!(*value, 5);
+//! let value: Option<&i32> = vec.get(index);
+//! assert_eq!(value, Some(&5));
 //! ```
 
 mod gen_vec;

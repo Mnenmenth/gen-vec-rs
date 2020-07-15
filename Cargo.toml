@@ -3,5 +3,12 @@ name = "gen-vec"
 version = "0.2.0"
 authors = ["Earl Kennedy <mnenmenth@gmail.com>"]
 edition = "2018"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 description = "Vector indexed with generational indices"
+readme = "README.md"
+repository = "https://github.com/Mnenmenth/gen-vec-rs"
+categories = ["data-structures", "memory-management", "game-development"]
+keywords = ["gen-vec", "generational", "vector", "ecs"]
+
+[badges]
+travis-ci = { repository = "Mnenmenth/gen-vec-rs" }

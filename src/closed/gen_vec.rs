@@ -4,7 +4,7 @@ use crate::
     exposed::{IndexAllocator, ExposedGenVec, IntoIter, Iter, IterMut}
 };
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct ClosedGenVec<T>
 {
     allocator: IndexAllocator,
@@ -235,8 +235,8 @@ impl<T> ClosedGenVec<T>
     ///
     /// let index: Index = vec.insert(23);
     ///
-    /// let value: &i32 = vec.get(index).unwrap();
-    /// assert_eq!(*value, 23);
+    /// let value: Option<&i32> = vec.get(index);
+    /// assert_eq!(value, Some(&23));
     /// ```
     pub fn get(&self, index: Index) -> Option<&T>
     {
@@ -254,12 +254,16 @@ impl<T> ClosedGenVec<T>
     ///
     /// let index: Index = vec.insert(23);
     ///
-    /// let mut value: &mut i32 = vec.get_mut(index).unwrap();
-    /// assert_eq!(*value, 23);
+    /// let mut value: Option<&mut i32> = vec.get_mut(index);
+    /// assert_eq!(value, Some(&mut 23));
     ///
-    /// *value = 0;
-    /// let value = vec.get(index).unwrap();
-    /// assert_eq!(*value, 0);
+    /// if let Some(value) = value
+    /// {
+    ///     *value = 0;
+    /// }
+    ///
+    /// let value: Option<&i32> = vec.get(index);
+    /// assert_eq!(value, Some(&0));
     /// ```
     pub fn get_mut(&mut self, index: Index) -> Option<&mut T>
     {
@@ -353,7 +357,7 @@ impl<T> std::ops::Index<Index> for ClosedGenVec<T>
 
     fn index(&self, index: Index) -> &Self::Output
     {
-        self.get(index).expect(format!("Invalid index: {:?}", index).as_str())
+        self.get(index).expect(format!("Index should be valid: {:?}", index).as_str())
     }
 }
 
@@ -361,7 +365,7 @@ impl<T> std::ops::IndexMut<Index> for ClosedGenVec<T>
 {
     fn index_mut(&mut self, index: Index) -> &mut Self::Output
     {
-        self.get_mut(index).expect(format!("Invalid index: {:?}", index).as_str())
+        self.get_mut(index).expect(format!("Index should be valid: {:?}", index).as_str())
     }
 }
 
@@ -389,12 +393,12 @@ mod tests {
     {
         let mut vec = ClosedGenVec::new();
         let index = vec.insert(3);
-        let item = vec.get(index).unwrap();
-        assert_eq!(*item, 3);
+        let value = vec.get(index);
+        assert_eq!(value, Some(&3));
 
         let index = vec.insert(4);
-        let item = vec.get(index).unwrap();
-        assert_eq!(*item, 4);
+        let value = vec.get(index);
+        assert_eq!(value, Some(&4));
     }
 
     #[test]
@@ -402,9 +406,14 @@ mod tests {
     {
         let mut vec = ClosedGenVec::new();
         let index = vec.insert(3);
-        let item = vec.get_mut(index).unwrap();
-        *item = 1;
-        assert_eq!(*vec.get(index).unwrap(), 1);
+        let value = vec.get_mut(index);
+        if let Some(value) = value
+        {
+            *value = 1;
+        }
+
+        let value = vec.get(index);
+        assert_eq!(value, Some(&1));
     }
 
     #[test]
@@ -412,8 +421,8 @@ mod tests {
     {
         let mut vec = ClosedGenVec::new();
         let index = vec.insert(3);
-        let item = vec.remove(index).unwrap();
-        assert_eq!(item, 3);
+        let value = vec.remove(index);
+        assert_eq!(value, Some(3));
         assert_eq!(vec.len(), 0);
         assert_eq!(vec.get(index), None);
 
@@ -518,11 +527,11 @@ mod tests {
 
         let mut iter = vec.iter();
 
-        let (i, value) = iter.next().unwrap();
+        let (i, value) = iter.next().expect("Iterator should have next");
         assert_eq!(i, index);
         assert_eq!(*value, 4);
 
-        let (i, value) = iter.next().unwrap();
+        let (i, value) = iter.next().expect("Iterator should have next");
         assert_eq!(i, index1);
         assert_eq!(*value, 5);
     }
@@ -536,18 +545,21 @@ mod tests {
 
         let mut iter = vec.iter_mut();
 
-        let (i, value) = iter.next().unwrap();
+        let (i, value) = iter.next().expect("Iterator should have next");
         assert_eq!(i, index);
         assert_eq!(*value, 4);
         *value = 0;
 
-        let (i, value) = iter.next().unwrap();
+        let (i, value) = iter.next().expect("Iterator should have next");
         assert_eq!(i, index1);
         assert_eq!(*value, 5);
         *value = 1;
 
-        assert_eq!(*vec.get(index).unwrap(), 0);
-        assert_eq!(*vec.get(index1).unwrap(), 1);
+        let value = vec.get(index);
+        assert_eq!(value, Some(&0));
+
+        let value = vec.get(index1);
+        assert_eq!(value, Some(&1));
     }
 
     #[test]
