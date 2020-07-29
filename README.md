@@ -30,7 +30,7 @@
  Add `gen-vec` to your `Cargo.toml`
 ```toml
 [dependencies]
-gen-vec = "0.2.0"
+gen-vec = "0.3.0"
 ```
 Using the self-allocating `ClosedGenVec`
 ```rust
