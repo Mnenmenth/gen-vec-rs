@@ -18,7 +18,7 @@
 //! assert_eq!(value, Some(&5));
 //! ```
 
-mod gen_vec;
+pub mod gen_vec;
 pub use self::gen_vec::*;
-mod index_allocator;
+pub mod index_allocator;
 pub use self::index_allocator::*;

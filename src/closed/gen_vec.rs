@@ -1,7 +1,15 @@
 use crate::
 {
     Index,
-    exposed::{IndexAllocator, ExposedGenVec, IntoIter, Iter, IterMut}
+    exposed::
+    {
+        IndexAllocator,
+        ExposedGenVec,
+        gen_vec::
+        {
+            IntoIter, Iter, IterMut
+        }
+    }
 };
 #[cfg(feature = "serde")]
 use serde::{Serialize, Deserialize};

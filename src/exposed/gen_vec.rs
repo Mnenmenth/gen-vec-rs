@@ -319,6 +319,7 @@ impl<T> ExposedGenVec<T>
 }
 
 /// Struct for consuming a `ExposedGenVec` into an iterator
+#[derive(Debug)]
 pub struct IntoIter<T>
 {
     internal: iter::Enumerate<vec::IntoIter<Option<Item<T>>>>
@@ -357,6 +358,7 @@ impl<T> IntoIterator for ExposedGenVec<T>
 }
 
 /// Struct for creating an iterator over an immutable `ExposedGenVec` reference
+#[derive(Debug)]
 pub struct Iter<'a, T: 'a>
 {
     internal: iter::Enumerate<slice::Iter<'a, Option<Item<T>>>>
@@ -392,6 +394,7 @@ impl<'a, T> IntoIterator for &'a ExposedGenVec<T>
 }
 
 /// Struct for creating an iterator over a mutable `ExposedGenVec` reference
+#[derive(Debug)]
 pub struct IterMut<'a, T: 'a>
 {
     internal: iter::Enumerate<slice::IterMut<'a, Option<Item<T>>>>

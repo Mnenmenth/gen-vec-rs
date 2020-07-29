@@ -1,5 +1,11 @@
-use std::collections::VecDeque;
-use std::vec::Vec;
+use std::
+{
+    vec,
+    vec::Vec,
+    collections::VecDeque,
+    iter,
+    slice
+};
 use crate::Index;
 
 #[cfg(feature = "serde")]
@@ -274,12 +280,117 @@ impl IndexAllocator
     {
         self.active_indices.len().saturating_sub(self.free_indices.len())
     }
+
+    /// Returns an iterator over an immutable `IndexAllocator`
+    /// Each step returns an `Index`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gen_vec::Index;
+    /// use gen_vec::exposed::IndexAllocator;
+    ///
+    /// let mut allocator: IndexAllocator = IndexAllocator::new();
+    /// allocator.allocate();
+    /// allocator.allocate();
+    ///
+    /// for index in allocator
+    /// {
+    ///     println!("{:?}", index);
+    /// }
+    /// ```
+    pub fn iter(&self) -> Iter
+    {
+        Iter
+        {
+            internal: self.active_indices.iter().enumerate()
+        }
+    }
+}
+
+/// Struct for consuming a `IndexAllocator` into an iterator
+#[derive(Debug)]
+pub struct IntoIter
+{
+    internal: iter::Enumerate<vec::IntoIter<AllocatedIndex>>
+}
+
+impl Iterator for IntoIter
+{
+    type Item = Index;
+
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        loop
+        {
+            match self.internal.next()
+            {
+                Some((index, allocated_index)) if !allocated_index.is_free => return Some(Index { index, generation: allocated_index.generation }),
+                Some((_, _)) => continue,
+                _ => return None
+            }
+        }
+    }
+}
+
+impl IntoIterator for IndexAllocator
+{
+    type Item = Index;
+    type IntoIter = IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter
+    {
+        IntoIter
+        {
+            internal: self.active_indices.into_iter().enumerate()
+        }
+    }
+}
+
+/// Struct for creating an iterator over an immutable `IndexAllocator` reference
+#[derive(Debug)]
+pub struct Iter<'a>
+{
+    internal: iter::Enumerate<slice::Iter<'a, AllocatedIndex>>
+}
+
+impl<'a> Iterator for Iter<'a>
+{
+    type Item = Index;
+
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        loop
+        {
+            loop
+            {
+                match self.internal.next()
+                {
+                    Some((index, allocated_index)) if !allocated_index.is_free => return Some(Index { index, generation: allocated_index.generation }),
+                    Some((_, _)) => continue,
+                    _ => return None
+                }
+            }
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a IndexAllocator
+{
+    type Item = Index;
+    type IntoIter = Iter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter
+    {
+        self.iter()
+    }
 }
 
 #[cfg(test)]
 mod allocator_tests
 {
     use crate::exposed::*;
+    use crate::Index;
 
     #[test]
     fn allocate()
@@ -354,5 +465,20 @@ mod allocator_tests
         assert!(!allocator.is_active(index));
         assert_eq!(allocator.num_active(), 1);
         assert_eq!(allocator.num_free(), 1);
+    }
+
+    #[test]
+    fn iter()
+    {
+        let mut allocator = IndexAllocator::new();
+        allocator.allocate();
+        allocator.allocate();
+        let i = allocator.allocate();
+        allocator.deallocate(i);
+
+        let mut iter = allocator.iter();
+        assert_eq!(iter.next(), Some(Index { index: 0, generation: 0 }));
+        assert_eq!(iter.next(), Some(Index { index: 1, generation: 0}));
+        assert_eq!(iter.next(), None);
     }
 }
